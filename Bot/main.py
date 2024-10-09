@@ -76,6 +76,7 @@ def start_register(message):
 
     with open(f'../Characters/{name}.json', 'w', encoding='utf-8') as file:
         json.dump(character_sheet, file, indent=4)
+        bot.send_message(message.chat.id, f'Персонаж {name} сохранен')
 
 
 
@@ -96,6 +97,25 @@ def show_character(message):
                 character = json.load(file)
                 for i in character:
                     bot.send_message(message.chat.id, f'{i}: {character[i]}')
+                return
+    bot.send_message(message.chat.id, 'Персонаж не найден')
+
+
+associations = {}
+
+@bot.message_handler(commands=['play_as'])
+def associate_char_and_player(message):
+    msg = message.text.split(' ')
+    if len(msg) == 1:
+        bot.send_message(message.chat.id, 'Введите команду вместе с именем персонажа')
+        return
+    name = " ".join(msg[1:])
+    for file_name in os.listdir('../Characters'):
+        if name == file_name[:-5]:
+            with open(f'../Characters/{file_name}') as file:
+                associations[message.from_user.id] = json.load(file)
+                bot.send_message(message.chat.id, f'Игрок {message.from_user.first_name} играет как {name}')
+                bot.send_message(message.chat.id, str(associations))
                 return
     bot.send_message(message.chat.id, 'Персонаж не найден')
 
