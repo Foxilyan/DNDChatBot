@@ -66,6 +66,7 @@ def set_stats(message, sheet, bot):
                 return
     bot.send_message(message.chat.id, str(sheet))
     bot.send_message(message.chat.id, str(empty_sheet))
+    bot.send_message(message.chat.id, 'Персонаж сохранен')
     with open(f'../Characters/{sheet['bio']['имя']}.json', 'w') as file:
         json.dump(sheet, file, indent=4)
 
