@@ -10,6 +10,9 @@ with open('token.txt') as f:
 bot = telebot.TeleBot(TOKEN)
 
 empty_sheet = {
+    'bio': {
+        'имя': None
+    },
     'статы': {
         'сила': None,
         'ловкость': None,
@@ -69,19 +72,27 @@ def start_register(message):
 
 def set_name(message, sheet):
     name = message.text
+    sheet['bio']['имя'] = name
+    set_stats(message, sheet)
+
+
+def set_stats(message, sheet):
     for stats in sheet:
         for stat in sheet[stats]:
-            bot.send_message(message.chat.id, f'Введите значение {stat}')
-            bot.register_next_step_handler(message, set_stat, stat, stats, sheet)
-            while sheet[stats][stat] is None:
-                pass
+            if sheet[stats][stat] is None:
+                bot.send_message(message.chat.id, f'Введите значение {stat}')
+                bot.register_next_step_handler(message, set_stat, stat, stats, sheet)
+                return
     bot.send_message(message.chat.id, str(sheet))
     bot.send_message(message.chat.id, str(empty_sheet))
+    with open(f'../Characters/{sheet['bio']['имя']}.json', 'w') as file:
+        json.dump(sheet, file, indent=4)
 
 
 def set_stat(message, stat, stats, sheet):
     try:
         sheet[stats][stat] = int(message.text)
+        set_stats(message, sheet)
     except BaseException:
         bot.send_message(message.chat.id, 'Дебил, давай нормально')
         bot.register_next_step_handler(message, set_stat, stat, stats, sheet)
