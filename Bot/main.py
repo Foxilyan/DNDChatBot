@@ -2,12 +2,51 @@ import telebot
 from Dice.Dice import Dice
 import json
 import os
+from copy import deepcopy
 
 with open('token.txt') as f:
     TOKEN = f.readline()
 
 bot = telebot.TeleBot(TOKEN)
-stats = ('имя', 'сила', 'ловкость', 'телосложение', 'интеллект', 'мудрость', 'харизма')
+
+empty_sheet = {
+    'статы': {
+        'сила': None,
+        'ловкость': None,
+        'телосложение': None,
+        'интеллект': None,
+        'мудрость': None,
+        'харизма': None
+    },
+    'спасброски': {
+        'спас сила': None,
+        'спас ловкость': None,
+        'спас телосложение': None,
+        'спас интеллект': None,
+        'спас мудрость': None,
+        'спас харизма': None
+    },
+    'скиллы': {
+        'акробатика': None,
+        'расследование': None,
+        'атлетика': None,
+        'восприятие': None,
+        'выживание': None,
+        'выступление': None,
+        'запугивание': None,
+        'история': None,
+        'ловкость рук': None,
+        'магия': None,
+        'медицина': None,
+        'обман': None,
+        'природа': None,
+        'проницательность': None,
+        'религия': None,
+        'скрытность': None,
+        'убеждение': None,
+        'уход за животными': None
+    }
+}
 
 
 @bot.message_handler(commands=['roll'])
@@ -23,29 +62,25 @@ def roll(message):
 
 @bot.message_handler(commands=['register'])
 def start_register(message):
-    character_sheet = {'stats': dict()}
-    for stat in stats:
-        bot.send_message(message.chat.id, f'Введите значение {stat}')
-        bot.register_next_step_handler(message, register_stat, stat, character_sheet)
-        while stat not in character_sheet.keys() and stat not in character_sheet['stats'].keys():
-            pass
+    if len(message.text.split(' ')) == 1:
+        bot.send_message(message.chat.id, 'Введите команду вместе с именем персонажа')
+        return
+    name = message.text.replace('/register ', '')
+    character_sheet = deepcopy(empty_sheet)
+    for stats in character_sheet.keys():
+        for stat in character_sheet[stats]:
+            bot.send_message(message.chat.id, f'Введите значение {stat}')
+            bot.register_next_step_handler(message, register_stat, stat, stats, character_sheet)
+            while character_sheet[stats][stat] is None:
+                pass
 
-        if stat == 'имя':
-            for file_name in os.listdir('../Characters'):
-                if character_sheet[stat] in file_name:
-                    bot.send_message(message.chat.id, f'Персонаж с таким именем уже существует')
-                    return
-
-    with open(f'../Characters/{character_sheet['имя']}.json', 'w', encoding='utf-8') as file:
+    with open(f'../Characters/{name}.json', 'w', encoding='utf-8') as file:
         json.dump(character_sheet, file, indent=4)
 
 
 
-def register_stat(message, stat, character_sheet):
-    if stat == 'имя':
-        character_sheet[stat] = message.text
-    else:
-        character_sheet['stats'][stat] = int(message.text)
+def register_stat(message, stat, stats, character_sheet):
+    character_sheet[stats][stat] = int(message.text)
 
 
 @bot.message_handler(commands=['show'])
@@ -60,8 +95,6 @@ def show_character(message):
             with open(f'../Characters/{file_name}') as file:
                 character = json.load(file)
                 for i in character:
-                    if i == 'имя':
-                        continue
                     bot.send_message(message.chat.id, f'{i}: {character[i]}')
                 return
     bot.send_message(message.chat.id, 'Персонаж не найден')
